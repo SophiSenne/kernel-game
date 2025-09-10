@@ -2,8 +2,22 @@
 
 #define MAX_TENTATIVAS 6
 #define PALAVRA_TAM 5
+#define NUM_PALAVRAS 10
 
-char palavra_correta[PALAVRA_TAM+1] = "TERMO";
+const char *lista_palavras[NUM_PALAVRAS] = {
+    "TERMO",
+    "CASAS",
+    "LIVRO",
+    "FELIZ",
+    "PLANO",
+    "GRITO",
+    "FORTE",
+    "NORTE",
+    "CARRO",
+    "LINHA"
+};
+
+char palavra_correta[PALAVRA_TAM+1];
 char tentativa[PALAVRA_TAM+1];
 int tentativas = 0;
 int letra_atual = 0;
@@ -145,7 +159,17 @@ void clear_screen(void)
 	}
 }
 
+void escolher_palavra() {
+    // Usa o status da porta do teclado como "semente"
+    unsigned char semente = read_port(KEYBOARD_STATUS_PORT);
+    int indice = semente % NUM_PALAVRAS;
+    for(int i = 0; i < PALAVRA_TAM; i++)
+        palavra_correta[i] = lista_palavras[indice][i];
+    palavra_correta[PALAVRA_TAM] = '\0';
+}
+
 void inicializar(){
+    escolher_palavra();
     clear_screen();
     kprint("Bem-vindo ao Termel: seu Termo no Kernel!");
     kprint_newline();

@@ -183,38 +183,47 @@ void inserirLetra(char c) {
 void verificarPalavra() {
     if(letra_atual != PALAVRA_TAM) return;
 
-	int acertos = 0;
-
-	unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
+    int acertos = 0;
+    unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
     current_loc = (current_loc / line_size) * line_size;
 
+    // Arrays auxiliares para controle de letras já usadas
+    int usadas_corretas[PALAVRA_TAM] = {0}; // Marca letras já verdes
+    int usadas_tentativa[PALAVRA_TAM] = {0}; // Marca letras já amarelas
+
+    // Primeiro passo: marca verdes
     for(int i = 0; i < PALAVRA_TAM; i++) {
         if(tentativa[i] == palavra_correta[i]) {
-            // Letra correta e na posição certa → verde
-            kprint_char_color(tentativa[i], 0x0A);
-			acertos ++;
+            kprint_char_color(tentativa[i], 0x0A); // verde
+            usadas_corretas[i] = 1;
+            usadas_tentativa[i] = 1;
+            acertos++;
         } else {
-            // Verifica se a letra existe em outra posição
-            int existe = 0;
-            for(int j = 0; j < PALAVRA_TAM; j++) {
-                if(tentativa[i] == palavra_correta[j]) {
-                    existe = 1;
-                    break;
-                }
-            }
-            if(existe) {
-                // Letra existe, mas posição errada → amarelo
-                kprint_char_color(tentativa[i], 0x0E);
-            } else {
-                // Letra não existe → vermelho
-                kprint_char_color(tentativa[i], 0x7);
+            // Preenche com espaço, será colorido depois
+            kprint_char_color(tentativa[i], 0x07);
+        }
+    }
+
+    // Segundo passo: marca amarelas
+    for(int i = 0; i < PALAVRA_TAM; i++) {
+        if(usadas_tentativa[i]) continue; // já foi verde
+
+        for(int j = 0; j < PALAVRA_TAM; j++) {
+            if(!usadas_corretas[j] && tentativa[i] == palavra_correta[j]) {
+                // Reposiciona cursor para colorir letra
+                unsigned int pos = current_loc - (PALAVRA_TAM - i) * BYTES_FOR_EACH_ELEMENT;
+                vidptr[pos] = tentativa[i];
+                vidptr[pos + 1] = 0x0E; // amarelo
+                usadas_corretas[j] = 1;
+                usadas_tentativa[i] = 1;
+                break;
             }
         }
     }
 
-	if (acertos == 5){
-		ganhou = 1;
-	}
+    if (acertos == PALAVRA_TAM){
+        ganhou = 1;
+    }
 
     kprint_newline();
     tentativas++;

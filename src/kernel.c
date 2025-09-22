@@ -13,7 +13,6 @@ const char *lista_palavras[NUM_PALAVRAS] = {
     "GRITO",
     "FORTE",
     "NORTE",
-    "CARRO",
     "LINHA"
 };
 
@@ -22,6 +21,7 @@ char tentativa[PALAVRA_TAM+1];
 int tentativas = 0;
 int letra_atual = 0;
 int ganhou = 0;
+int perdeu = 0;
 
 #define LINES 25
 #define COLUMNS_IN_LINE 80
@@ -42,9 +42,9 @@ extern char read_port(unsigned short port);
 extern void write_port(unsigned short port, unsigned char data);
 extern void load_idt(unsigned long *idt_ptr);
 
-/* current cursor location */
+
 unsigned int current_loc = 0;
-/* video memory begins at address 0xb8000 */
+
 char *vidptr = (char*)0xb8000;
 
 struct IDT_entry {
@@ -64,7 +64,6 @@ void idt_init(void)
 	unsigned long idt_address;
 	unsigned long idt_ptr[2];
 
-	/* populate IDT entry of keyboard's interrupt */
 	keyboard_address = (unsigned long)keyboard_handler;
 	IDT[0x21].offset_lowerbits = keyboard_address & 0xffff;
 	IDT[0x21].selector = KERNEL_CODE_SEGMENT_OFFSET;
@@ -159,14 +158,19 @@ void clear_screen(void)
 	}
 }
 
+unsigned char read_rtc(unsigned char reg) {
+    write_port(0x70, reg);           // Select RTC register
+    return read_port(0x71);          // Read data from RTC
+}
+
 void escolher_palavra() {
-    // Usa o status da porta do teclado como "semente"
-    unsigned char semente = read_port(KEYBOARD_STATUS_PORT);
+    unsigned char semente = read_rtc(0x00); // 0x00: RTC seconds register
     int indice = semente % NUM_PALAVRAS;
     for(int i = 0; i < PALAVRA_TAM; i++)
         palavra_correta[i] = lista_palavras[indice][i];
     palavra_correta[PALAVRA_TAM] = '\0';
 }
+
 
 void inicializar(){
     escolher_palavra();
@@ -183,6 +187,14 @@ void mensagem_ganhou(){
 	kprint(str_ganhou);
 }
 
+void mensagem_perdeu(){
+	const char *str_perdeu = "GAME OVER! Palavra certa:";
+	kprint_newline();
+	kprint(str_perdeu);
+    kprint_newline();
+    kprint(palavra_correta);
+}
+
 void kmain(void) {
     clear_screen();
     idt_init();
@@ -190,9 +202,13 @@ void kmain(void) {
 
     inicializar();
 
-    while(!ganhou);
+    while(!ganhou && !perdeu);
 
-	mensagem_ganhou();
+	if(ganhou)
+        mensagem_ganhou();
+    
+    if(perdeu)
+        mensagem_perdeu();
 }
 
 // Recebe uma letra do teclado e adiciona à tentativa
@@ -252,6 +268,10 @@ void verificarPalavra() {
     kprint_newline();
     tentativas++;
     letra_atual = 0;
+
+    if (tentativas >= 5 && !ganhou){
+        perdeu = 1;
+    }
 }
 
 void keyboard_handler_main(void) {

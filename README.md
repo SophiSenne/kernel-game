@@ -43,4 +43,4 @@ Ou simplesmente:
 
 ## Vídeo de Explicação
 
-[Link para o vídeo aqui]()
+[Link para o vídeo aqui](https://drive.google.com/file/d/19kerqvkFy9pEeErYp01IwSVuB9tw2A6X/view?usp=drivesdk)
